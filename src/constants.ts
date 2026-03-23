@@ -9,7 +9,7 @@ export const ARTWORKS: Artwork[] = [
     category: 'Photography',
     year: '2026',
     dimensions: '12 x 12 inches',
-    medium: 'Traditional Mud and Mirror Work'
+    medium: 'CANVAS PAINTING'
   },
   {
     id: 'W10D',
@@ -19,7 +19,7 @@ export const ARTWORKS: Artwork[] = [
     category: 'Photography',
     year: '2026',
     dimensions: '12 x 12 inches',
-    medium: 'Traditional Mud and Mirror Work'
+    medium: 'CANVAS PAINTING'
   },
   {
     id: '8JGx',
@@ -29,6 +29,6 @@ export const ARTWORKS: Artwork[] = [
     category: 'Lippan Art',
     year: '2026',
     dimensions: '18 x 18 inches',
-    medium: 'Traditional Mud and Mirror Work'
+    medium: 'CANVAS PAINTING'
   }
 ];

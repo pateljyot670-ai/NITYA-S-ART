@@ -19,11 +19,13 @@ import {
   Download,
   Trash2,
   Link2,
-  LayoutDashboard
+  LayoutDashboard,
+  Edit,
+  Settings
 } from 'lucide-react';
 import { cn } from './lib/utils';
 import { ARTWORKS } from './constants';
-import { Artwork, Category } from './types';
+import { Artwork, Category, Section } from './types';
 import { 
   auth, 
   db, 
@@ -41,11 +43,13 @@ import {
   handleFirestoreError,
   OperationType,
   deleteDoc,
-  doc
+  doc,
+  updateDoc,
+  setDoc
 } from './firebase';
 import { User } from 'firebase/auth';
 
-const CATEGORIES: Category[] = ['All', 'Oil Painting', 'Digital Art', 'Sculpture', 'Photography', 'Lippan Art'];
+const CATEGORIES: Category[] = ['All', 'CANVAS PAINTING', 'Digital Art', 'Sculpture', 'Photography', 'Lippan Art'];
 
 const WhatsAppIcon = () => (
   <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current">
@@ -167,7 +171,7 @@ export default function App() {
   const [newArt, setNewArt] = useState<Partial<Artwork>>({
     title: '',
     category: 'Lippan Art',
-    medium: 'Traditional Mud and Mirror Work',
+    medium: 'CANVAS PAINTING',
     year: new Date().getFullYear().toString(),
     description: ''
   });
@@ -175,6 +179,11 @@ export default function App() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [artworkToDelete, setArtworkToDelete] = useState<Artwork | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [artworkToEdit, setArtworkToEdit] = useState<Artwork | null>(null);
+  const [sections, setSections] = useState<Record<string, Section>>({});
+  const [isEditSectionModalOpen, setIsEditSectionModalOpen] = useState(false);
+  const [sectionToEdit, setSectionToEdit] = useState<Section | null>(null);
 
   const handleDelete = async () => {
     if (!artworkToDelete || !isAdmin) return;
@@ -216,6 +225,23 @@ export default function App() {
       setArtworks(arts.length > 0 ? arts : ARTWORKS);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'artworks');
+    });
+
+    return () => unsubscribe();
+  }, [isAuthReady]);
+
+  // Sections Listener
+  useEffect(() => {
+    if (!isAuthReady) return;
+
+    const unsubscribe = onSnapshot(collection(db, 'sections'), (snapshot) => {
+      const sectionMap: Record<string, Section> = {};
+      snapshot.docs.forEach(doc => {
+        sectionMap[doc.id] = { ...doc.data(), id: doc.id } as Section;
+      });
+      setSections(sectionMap);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'sections');
     });
 
     return () => unsubscribe();
@@ -313,6 +339,37 @@ export default function App() {
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, 'artworks');
       }
+    }
+  };
+
+  const handleEditArt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdmin || !artworkToEdit) return;
+
+    try {
+      const { id, ...data } = artworkToEdit;
+      await updateDoc(doc(db, 'artworks', id), data);
+      setIsEditModalOpen(false);
+      setArtworkToEdit(null);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `artworks/${artworkToEdit.id}`);
+    }
+  };
+
+  const handleEditSection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdmin || !sectionToEdit) return;
+
+    try {
+      const { id, ...data } = sectionToEdit;
+      await setDoc(doc(db, 'sections', id), {
+        ...data,
+        updatedAt: Timestamp.now()
+      });
+      setIsEditSectionModalOpen(false);
+      setSectionToEdit(null);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `sections/${sectionToEdit.id}`);
     }
   };
 
@@ -502,6 +559,25 @@ export default function App() {
             </div>
 
             <div className="relative z-20 max-w-5xl py-20">
+              {isAdmin && (
+                <button 
+                  onClick={() => {
+                    const heroSection = sections['hero'] || {
+                      id: 'hero',
+                      title: "NITYA'S ART GALLERY",
+                      subtitle: "EST. 2024 • CURATED COLLECTION",
+                      content: "A premium digital space dedicated to the preservation and exhibition of contemporary fine art and traditional crafts.",
+                      updatedAt: new Date()
+                    };
+                    setSectionToEdit(heroSection);
+                    setIsEditSectionModalOpen(true);
+                  }}
+                  className="mb-8 flex items-center gap-2 px-4 py-2 bg-brand-red text-white text-[10px] uppercase tracking-widest rounded-full hover:bg-brand-red/90 transition-all"
+                >
+                  <Edit className="w-3 h-3" />
+                  Edit Hero Section
+                </button>
+              )}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -510,7 +586,7 @@ export default function App() {
               >
                 <div className="h-[1px] w-12 bg-brand-red" />
                 <p className="text-[10px] uppercase tracking-[0.5em] text-brand-red font-bold">
-                  EST. 2024 • CURATED COLLECTION
+                  {sections['hero']?.subtitle || "EST. 2024 • CURATED COLLECTION"}
                 </p>
               </motion.div>
 
@@ -521,11 +597,11 @@ export default function App() {
                 className="text-5xl sm:text-7xl md:text-[10rem] font-serif font-bold leading-[0.85] mb-12 md:mb-16 tracking-tighter text-brand-ink flex flex-col"
               >
                 <span className="relative">
-                  NITYA'S ART
+                  {sections['hero']?.title.split(' ').slice(0, 2).join(' ') || "NITYA'S ART"}
                   <span className="absolute -top-4 -right-8 text-xs font-sans tracking-[0.5em] text-brand-ink/20 hidden md:block">© COLLECTION</span>
                 </span>
                 <span className="italic md:ml-48 text-brand-blue/80 flex items-center gap-8 font-normal">
-                  GALLERY
+                  {sections['hero']?.title.split(' ').slice(2).join(' ') || "GALLERY"}
                   <div className="h-[2px] flex-grow bg-brand-ink/5 hidden md:block" />
                 </span>
               </motion.h2>
@@ -547,7 +623,7 @@ export default function App() {
 
                 <div className="max-w-xs">
                   <p className="text-[10px] md:text-[11px] leading-relaxed text-brand-ink/50 tracking-wide uppercase">
-                    A premium digital space dedicated to the preservation and exhibition of contemporary fine art and traditional crafts.
+                    {sections['hero']?.content || "A premium digital space dedicated to the preservation and exhibition of contemporary fine art and traditional crafts."}
                   </p>
                 </div>
               </motion.div>
@@ -651,16 +727,28 @@ export default function App() {
                             </div>
                           </div>
                           {isAdmin && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setArtworkToDelete(art);
-                                setIsDeleteConfirmOpen(true);
-                              }}
-                              className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center border border-brand-red/20 shadow-sm text-brand-red hover:bg-brand-red hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setArtworkToDelete(art);
+                                  setIsDeleteConfirmOpen(true);
+                                }}
+                                className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center border border-brand-red/20 shadow-sm text-brand-red hover:bg-brand-red hover:text-white transition-all"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setArtworkToEdit(art);
+                                  setIsEditModalOpen(true);
+                                }}
+                                className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center border border-brand-ink/20 shadow-sm text-brand-ink hover:bg-brand-ink hover:text-white transition-all"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                            </div>
                           )}
                         </div>
                         <div className="space-y-2 px-1">
@@ -671,7 +759,7 @@ export default function App() {
                           <h4 className="text-2xl font-sans font-bold tracking-tight text-brand-ink group-hover:text-brand-red transition-colors duration-300 uppercase">{art.title}</h4>
                           <div className="h-[1px] w-full bg-brand-ink/10 my-2" />
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] uppercase tracking-[0.15em] text-brand-ink/40 font-medium">{art.medium || 'TRADITIONAL MUD AND MIRROR WORK'}</span>
+                            <span className="text-[10px] uppercase tracking-[0.15em] text-brand-ink/40 font-medium">{art.medium || 'CANVAS PAINTING'}</span>
                             <span className="text-[10px] font-medium text-brand-ink/40">{art.year}</span>
                           </div>
                         </div>
@@ -702,8 +790,23 @@ export default function App() {
             >
               <ArrowLeft className="w-4 h-4" /> Back to Home
             </button>
-            <h2 className="text-6xl md:text-8xl font-serif font-bold tracking-tighter text-brand-ink uppercase mb-4">Exhibitions</h2>
-            <p className="text-xl md:text-2xl font-light tracking-[0.5em] text-brand-red uppercase">Coming Soon</p>
+            <h2 className="text-6xl md:text-8xl font-serif font-bold tracking-tighter text-brand-ink uppercase mb-4">
+              {sections['exhibitions']?.title || 'Exhibitions'}
+            </h2>
+            <p className="text-xl md:text-2xl font-light tracking-[0.5em] text-brand-red uppercase">
+              {sections['exhibitions']?.content || 'Coming Soon'}
+            </p>
+            {isAdmin && (
+              <button 
+                onClick={() => {
+                  setSectionToEdit(sections['exhibitions'] || { id: 'exhibitions', title: 'Exhibitions', content: 'Coming Soon', updatedAt: null });
+                  setIsEditSectionModalOpen(true);
+                }}
+                className="mt-12 flex items-center gap-2 text-[10px] uppercase tracking-widest text-brand-ink/40 hover:text-brand-red transition-colors"
+              >
+                <Edit className="w-4 h-4" /> Edit Section
+              </button>
+            )}
           </motion.section>
         )}
 
@@ -721,8 +824,23 @@ export default function App() {
             >
               <ArrowLeft className="w-4 h-4" /> Back to Home
             </button>
-            <h2 className="text-6xl md:text-8xl font-serif font-bold tracking-tighter text-brand-ink uppercase mb-4">Nitya Patel</h2>
-            <p className="text-xl md:text-2xl font-light tracking-[0.5em] text-brand-red uppercase">Coming Soon</p>
+            <h2 className="text-6xl md:text-8xl font-serif font-bold tracking-tighter text-brand-ink uppercase mb-4">
+              {sections['about']?.title || 'Nitya Patel'}
+            </h2>
+            <p className="text-xl md:text-2xl font-light tracking-[0.5em] text-brand-red uppercase">
+              {sections['about']?.content || 'Coming Soon'}
+            </p>
+            {isAdmin && (
+              <button 
+                onClick={() => {
+                  setSectionToEdit(sections['about'] || { id: 'about', title: 'Nitya Patel', content: 'Coming Soon', updatedAt: null });
+                  setIsEditSectionModalOpen(true);
+                }}
+                className="mt-12 flex items-center gap-2 text-[10px] uppercase tracking-widest text-brand-ink/40 hover:text-brand-red transition-colors"
+              >
+                <Edit className="w-4 h-4" /> Edit Section
+              </button>
+            )}
           </motion.section>
         )}
       </AnimatePresence>
@@ -875,6 +993,149 @@ export default function App() {
                   className="w-full py-4 bg-brand-red text-white text-[10px] uppercase tracking-[0.3em] font-bold rounded-lg hover:bg-brand-red/90 transition-all shadow-lg shadow-brand-red/20"
                 >
                   Publish to Gallery
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Artwork Modal */}
+      <AnimatePresence>
+        {isEditModalOpen && artworkToEdit && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              className="w-full max-w-2xl bg-neutral-900/50 border border-white/10 rounded-2xl p-8 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-light tracking-widest uppercase text-brand-red">Edit Artwork</h2>
+                <button onClick={() => setIsEditModalOpen(false)} className="text-white/40 hover:text-brand-red transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditArt} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-[0.2em] text-white/80">Title</label>
+                  <input 
+                    required
+                    type="text"
+                    value={artworkToEdit.title}
+                    onChange={e => setArtworkToEdit(prev => prev ? ({ ...prev, title: e.target.value }) : null)}
+                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-red/60 transition-colors text-white placeholder:text-white/40"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-[0.2em] text-white/80">Category</label>
+                    <select 
+                      value={artworkToEdit.category}
+                      onChange={e => setArtworkToEdit(prev => prev ? ({ ...prev, category: e.target.value as any }) : null)}
+                      className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-red/60 transition-colors appearance-none text-white"
+                    >
+                      {CATEGORIES.map(cat => (
+                        <option key={cat} value={cat} className="bg-neutral-900 text-white">{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-[0.2em] text-white/80">Year</label>
+                    <input 
+                      type="text"
+                      value={artworkToEdit.year}
+                      onChange={e => setArtworkToEdit(prev => prev ? ({ ...prev, year: e.target.value }) : null)}
+                      className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-red/60 transition-colors text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-[0.2em] text-white/80">Description</label>
+                  <textarea 
+                    value={artworkToEdit.description}
+                    onChange={e => setArtworkToEdit(prev => prev ? ({ ...prev, description: e.target.value }) : null)}
+                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-red/60 transition-colors h-32 resize-none text-white placeholder:text-white/40"
+                  />
+                </div>
+
+                <button 
+                  type="submit"
+                  className="w-full py-4 bg-brand-red text-white text-[10px] uppercase tracking-[0.3em] font-bold rounded-lg hover:bg-brand-red/90 transition-all shadow-lg shadow-brand-red/20"
+                >
+                  Save Changes
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Section Modal */}
+      <AnimatePresence>
+        {isEditSectionModalOpen && sectionToEdit && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              className="w-full max-w-2xl bg-neutral-900/50 border border-white/10 rounded-2xl p-8 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-light tracking-widest uppercase text-brand-red">Edit {sectionToEdit.id} Section</h2>
+                <button onClick={() => setIsEditSectionModalOpen(false)} className="text-white/40 hover:text-brand-red transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditSection} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-[0.2em] text-white/80">Title</label>
+                  <input 
+                    required
+                    type="text"
+                    value={sectionToEdit.title}
+                    onChange={e => setSectionToEdit(prev => prev ? ({ ...prev, title: e.target.value }) : null)}
+                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-red/60 transition-colors text-white placeholder:text-white/40"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-[0.2em] text-white/80">Subtitle (Optional)</label>
+                  <input 
+                    type="text"
+                    value={sectionToEdit.subtitle || ''}
+                    onChange={e => setSectionToEdit(prev => prev ? ({ ...prev, subtitle: e.target.value }) : null)}
+                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-red/60 transition-colors text-white placeholder:text-white/40"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-[0.2em] text-white/80">Content</label>
+                  <textarea 
+                    required
+                    value={sectionToEdit.content}
+                    onChange={e => setSectionToEdit(prev => prev ? ({ ...prev, content: e.target.value }) : null)}
+                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-red/60 transition-colors h-64 resize-none text-white placeholder:text-white/40"
+                  />
+                </div>
+
+                <button 
+                  type="submit"
+                  className="w-full py-4 bg-brand-red text-white text-[10px] uppercase tracking-[0.3em] font-bold rounded-lg hover:bg-brand-red/90 transition-all shadow-lg shadow-brand-red/20"
+                >
+                  Save Section
                 </button>
               </form>
             </motion.div>

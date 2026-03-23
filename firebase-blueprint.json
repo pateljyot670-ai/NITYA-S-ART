@@ -18,11 +18,27 @@
       },
       "required": ["title", "imageUrl", "category", "medium", "year", "authorUid", "createdAt"]
     }
+    "Section": {
+      "title": "Section",
+      "description": "A dynamic section of the website",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Section ID (e.g., 'about', 'exhibitions')" },
+        "title": { "type": "string", "description": "Title of the section" },
+        "content": { "type": "string", "description": "Content of the section" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last updated timestamp" }
+      },
+      "required": ["title", "content", "updatedAt"]
+    }
   },
   "firestore": {
     "/artworks": {
       "schema": "Artwork",
       "description": "Collection of all artworks in the gallery"
+    },
+    "/sections": {
+      "schema": "Section",
+      "description": "Collection of dynamic sections like About and Exhibitions"
     }
   }
 }

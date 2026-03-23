@@ -10,4 +10,12 @@ export interface Artwork {
   id_ref?: string;
 }
 
-export type Category = 'All' | 'Oil Painting' | 'Digital Art' | 'Sculpture' | 'Photography' | 'Lippan Art';
+export interface Section {
+  id: string;
+  title: string;
+  subtitle?: string;
+  content: string;
+  updatedAt: any;
+}
+
+export type Category = 'All' | 'CANVAS PAINTING' | 'Digital Art' | 'Sculpture' | 'Photography' | 'Lippan Art';
