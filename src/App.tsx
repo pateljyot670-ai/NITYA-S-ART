@@ -357,18 +357,17 @@ export default function App() {
   };
 
   const handleShare = async (artwork?: Artwork) => {
-    const art = artwork || selectedArtwork;
-    const title = art ? `Check out this artwork: ${art.title}` : "Explore NITYA'S ART - A Curated Art Collection";
-    const url = art ? `${window.location.origin}/?art=${art.id}` : window.location.href;
+    const shareTitle = "🎨 Where art meets emotion.\n\nDiscover a premium collection of contemporary fine art at Nitya’s Art Gallery — a digital sanctuary for creativity, elegance, and inspiration 🖼️✨\n\n🌐 Visit now:";
+    const shareUrl = "https://nityasart.vercel.app/";
     
-    setShareData({ title, url });
+    setShareData({ title: shareTitle, url: shareUrl });
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title,
-          text: art?.description || "A premium digital space dedicated to the preservation and exhibition of contemporary fine art.",
-          url,
+          title: "Nitya's Art Gallery",
+          text: shareTitle,
+          url: shareUrl,
         });
       } catch (error) {
         if ((error as any).name !== 'AbortError') {
