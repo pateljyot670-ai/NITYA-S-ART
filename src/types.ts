@@ -7,6 +7,7 @@ export interface Artwork {
   year: string;
   dimensions?: string;
   medium: string;
+  id_ref?: string;
 }
 
 export type Category = 'All' | 'Oil Painting' | 'Digital Art' | 'Sculpture' | 'Photography' | 'Lippan Art';

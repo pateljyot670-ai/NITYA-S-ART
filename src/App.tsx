@@ -46,6 +46,7 @@ import { User } from 'firebase/auth';
 const CATEGORIES: Category[] = ['All', 'Oil Painting', 'Digital Art', 'Sculpture', 'Photography', 'Lippan Art'];
 
 export default function App() {
+  const [currentView, setCurrentView] = useState<'home' | 'gallery' | 'exhibitions' | 'about'>('home');
   const [selectedCategory, setSelectedCategory] = useState<Category>('All');
   const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -276,21 +277,41 @@ export default function App() {
       </div>
 
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 px-6 py-8 flex justify-between items-center">
+      <nav className={cn(
+        "fixed top-0 w-full z-50 px-6 md:px-12 py-6 flex justify-between items-center transition-all duration-300",
+        "backdrop-blur-md bg-brand-cream/70 border-b border-brand-ink/5"
+      )}>
         <motion.h1 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="text-2xl font-light tracking-[0.2em] uppercase text-brand-red"
+          className="text-xl md:text-2xl font-serif font-bold tracking-[0.2em] text-brand-ink cursor-pointer"
+          onClick={() => setCurrentView('home')}
         >
-          Nitya's Art
+          NITYA'S ART
         </motion.h1>
         
-        <div className="flex items-center gap-8">
-          <div className="hidden md:flex gap-8 text-xs uppercase tracking-widest font-medium text-brand-ink/60">
+        <div className="flex items-center gap-6 md:gap-12">
+          <div className="hidden lg:flex gap-10 text-[10px] uppercase tracking-[0.3em] font-medium text-brand-ink/50">
             {['Gallery', 'Exhibitions', 'About', 'Contact'].map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} className="hover:text-brand-red transition-colors">
+              <button 
+                key={item} 
+                onClick={() => {
+                  if (item === 'Gallery') setCurrentView('gallery');
+                  else if (item === 'Exhibitions') setCurrentView('exhibitions');
+                  else if (item === 'About') setCurrentView('about');
+                  else if (item === 'Contact') return;
+                  else setCurrentView('home');
+                }}
+                className={cn(
+                  "hover:text-brand-red transition-colors relative group",
+                  item === 'Contact' && "cursor-default opacity-50 hover:text-brand-ink/50"
+                )}
+              >
                 {item}
-              </a>
+                {item !== 'Contact' && (
+                  <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-brand-red transition-all group-hover:w-full" />
+                )}
+              </button>
             ))}
           </div>
 
@@ -320,183 +341,295 @@ export default function App() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <header className="relative h-screen flex flex-col justify-center px-6 md:px-24 overflow-hidden">
-        <div className="absolute inset-0 z-0 bg-brand-cream" />
-
-        <div className="relative z-20 max-w-4xl">
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="text-xs uppercase tracking-[0.4em] mb-6 text-brand-red font-bold"
-          >
-            Featured Exhibition 2024
-          </motion.p>
-          <motion.h2 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            className="text-6xl md:text-9xl font-light leading-none mb-12 tracking-tighter text-brand-ink"
-          >
-            VIBRANT <br />
-            <span className="italic font-serif ml-12 md:ml-24 text-brand-blue">COLORS</span>
-          </motion.h2>
-          <motion.div
+      <AnimatePresence mode="wait">
+        {currentView === 'home' && (
+          <motion.header 
+            key="home"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="relative min-h-screen flex flex-col justify-center px-6 md:px-24 pt-24 overflow-hidden"
           >
-            <button className="group flex items-center gap-4 text-sm uppercase tracking-widest border-2 border-brand-red px-8 py-4 rounded-full hover:bg-brand-red hover:text-white transition-all text-brand-red font-bold">
-              Explore Collection
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
-            </button>
-          </motion.div>
-        </div>
+            <div className="absolute inset-0 z-0 bg-brand-cream" />
+            
+            {/* Decorative elements */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] opacity-20 pointer-events-none">
+              <div className="absolute top-0 left-0 w-full h-full border-[1px] border-brand-ink/5 rounded-full animate-pulse" />
+              <div className="absolute top-[10%] left-[10%] w-[80%] h-[80%] border-[1px] border-brand-ink/5 rounded-full" />
+            </div>
 
-        <div className="absolute bottom-12 right-12 hidden md:block">
-          <div className="flex flex-col gap-6">
-            <Instagram className="w-5 h-5 text-brand-ink/40 hover:text-brand-red cursor-pointer transition-colors" />
-            <Twitter className="w-5 h-5 text-brand-ink/40 hover:text-brand-red cursor-pointer transition-colors" />
-            <Mail className="w-5 h-5 text-brand-ink/40 hover:text-brand-red cursor-pointer transition-colors" />
-          </div>
-        </div>
-      </header>
+            <div className="relative z-20 max-w-5xl py-20">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="flex items-center gap-4 mb-8"
+              >
+                <div className="h-[1px] w-12 bg-brand-red" />
+                <p className="text-[10px] uppercase tracking-[0.5em] text-brand-red font-bold">
+                  EST. 2024 • CURATED COLLECTION
+                </p>
+              </motion.div>
 
-      {/* Gallery Section */}
-      <section id="gallery" className="py-32 px-6 md:px-12 relative z-10">
-        <div className="max-w-7xl mx-auto">
-          {/* Gallery Header - Dashboard Style */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16 border-b border-brand-ink/5 pb-12">
-            <div className="space-y-4">
-              <h3 className="text-5xl font-light tracking-tight text-brand-ink">Archive <span className="text-brand-ink/20 font-mono text-2xl">v1.0</span></h3>
-              <div className="flex gap-8 pt-2">
-                <div className="flex flex-col">
-                  <span className="text-[8px] uppercase tracking-widest text-brand-ink/40 mb-1">Total Assets</span>
-                  <span className="text-xl font-mono">{artworks.length}</span>
+              <motion.h2 
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="text-5xl sm:text-7xl md:text-[10rem] font-serif font-bold leading-[0.85] mb-12 md:mb-16 tracking-tighter text-brand-ink flex flex-col"
+              >
+                <span className="relative">
+                  NITYA'S ART
+                  <span className="absolute -top-4 -right-8 text-xs font-sans tracking-[0.5em] text-brand-ink/20 hidden md:block">© COLLECTION</span>
+                </span>
+                <span className="italic md:ml-48 text-brand-blue/80 flex items-center gap-8 font-normal">
+                  GALLERY
+                  <div className="h-[2px] flex-grow bg-brand-ink/5 hidden md:block" />
+                </span>
+              </motion.h2>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                className="flex flex-col md:flex-row items-start md:items-center gap-8 md:gap-12"
+              >
+                <button 
+                  onClick={() => setCurrentView('gallery')}
+                  className="group relative flex items-center gap-6 text-xs uppercase tracking-[0.3em] bg-brand-ink text-white px-10 md:px-12 py-5 md:py-6 rounded-full hover:bg-brand-red transition-all duration-500 overflow-hidden"
+                >
+                  <span className="relative z-10">Explore Collection</span>
+                  <ArrowRight className="w-4 h-4 relative z-10 group-hover:translate-x-2 transition-transform" />
+                  <div className="absolute inset-0 bg-brand-red translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                </button>
+
+                <div className="max-w-xs">
+                  <p className="text-[10px] md:text-[11px] leading-relaxed text-brand-ink/50 tracking-wide uppercase">
+                    A premium digital space dedicated to the preservation and exhibition of contemporary fine art and traditional crafts.
+                  </p>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[8px] uppercase tracking-widest text-brand-ink/40 mb-1">Categories</span>
-                  <span className="text-xl font-mono">{CATEGORIES.length - 1}</span>
+              </motion.div>
+            </div>
+
+            <div className="absolute bottom-8 md:bottom-12 left-6 md:left-24 z-20">
+              <div className="flex items-center gap-6 md:gap-8">
+                <div className="flex gap-4 md:gap-6">
+                  <Instagram className="w-4 h-4 text-brand-ink/30 hover:text-brand-red cursor-pointer transition-colors" />
+                  <Twitter className="w-4 h-4 text-brand-ink/30 hover:text-brand-red cursor-pointer transition-colors" />
+                  <Mail className="w-4 h-4 text-brand-ink/30 hover:text-brand-red cursor-pointer transition-colors" />
                 </div>
+                <div className="h-[1px] w-12 md:w-24 bg-brand-ink/10" />
+                <span className="text-[8px] md:text-[9px] uppercase tracking-[0.3em] text-brand-ink/30 font-mono">SCROLL TO DISCOVER</span>
               </div>
             </div>
-            
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={cn(
-                    "text-[9px] font-mono uppercase tracking-widest px-4 py-2 rounded-md border transition-all",
-                    selectedCategory === cat 
-                      ? "bg-brand-ink text-white border-brand-ink" 
-                      : "border-brand-ink/10 text-brand-ink/40 hover:border-brand-ink/40 hover:bg-brand-ink/5"
-                  )}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
+          </motion.header>
+        )}
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            <AnimatePresence mode="popLayout">
-              {filteredArtworks.length > 0 ? (
-                filteredArtworks.map((art, index) => (
-                  <motion.div
-                    layout
-                    key={art.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    whileHover={{ y: -8 }}
-                    transition={{ 
-                      delay: index * 0.05,
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 20
-                    }}
-                    className="group cursor-pointer"
-                    onClick={() => {
-                      setSelectedArtwork(art);
-                      setIsDetailOpen(true);
-                    }}
-                  >
-                    <div className={cn(
-                      "relative aspect-square overflow-hidden bg-brand-ink/5 mb-4 shadow-sm transition-all duration-500 group-hover:shadow-md border border-brand-ink/5",
-                      "rounded-lg"
-                    )}>
-                      <img 
-                        src={art.imageUrl} 
-                        alt={art.title}
-                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                        referrerPolicy="no-referrer"
-                      />
-                      {isAdmin && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setArtworkToDelete(art);
-                            setIsDeleteConfirmOpen(true);
-                          }}
-                          className="absolute top-2 left-2 z-20 w-8 h-8 rounded-md bg-white/90 backdrop-blur-md flex items-center justify-center border border-brand-red/20 shadow-sm text-brand-red hover:bg-brand-red hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+        {currentView === 'gallery' && (
+          <motion.section 
+            key="gallery"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            id="gallery" 
+            className="py-32 px-6 md:px-12 relative z-10 min-h-screen"
+          >
+            <div className="max-w-7xl mx-auto">
+              <button 
+                onClick={() => setCurrentView('home')}
+                className="flex items-center gap-2 text-xs uppercase tracking-widest text-brand-red mb-12 hover:gap-4 transition-all"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to Home
+              </button>
+              {/* Gallery Header - Ultra Minimal Style */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12 border-b border-brand-ink/5 pb-6">
+                <motion.h3 
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  className="text-3xl md:text-4xl font-serif font-bold tracking-tight text-brand-ink"
+                >
+                  Collection
+                </motion.h3>
+                
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={cn(
+                        "text-[9px] uppercase tracking-[0.2em] px-4 py-1.5 rounded-full border transition-all duration-300",
+                        selectedCategory === cat 
+                          ? "bg-brand-ink text-white border-brand-ink" 
+                          : "border-brand-ink/10 text-brand-ink/40 hover:border-brand-ink/30 hover:text-brand-ink"
                       )}
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="w-8 h-8 rounded-md bg-white/90 backdrop-blur-md flex items-center justify-center border border-brand-ink/10 shadow-sm">
-                          <Info className="w-4 h-4 text-brand-ink" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[8px] font-mono uppercase tracking-widest text-brand-red">{art.category}</span>
-                        <span className="text-[8px] font-mono text-brand-ink/30">#{art.id.slice(0, 4)}</span>
-                      </div>
-                      <h4 className="text-sm font-medium tracking-tight text-brand-ink group-hover:text-brand-red transition-colors truncate">{art.title}</h4>
-                      <div className="flex items-center justify-between pt-1 border-t border-brand-ink/5">
-                        <span className="text-[9px] font-mono text-brand-ink/40 uppercase tracking-tighter">{art.medium || 'Mixed Media'}</span>
-                        <span className="text-[9px] font-mono text-brand-ink/60">{art.year}</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))
-              ) : (
-                <div className="col-span-full py-24 text-center border-2 border-dashed border-brand-ink/10 rounded-2xl">
-                  <p className="text-brand-ink/20 uppercase tracking-[0.3em] text-xs">No artworks to display</p>
+                    >
+                      {cat}
+                    </button>
+                  ))}
                 </div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </section>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-6 md:gap-12">
+                <AnimatePresence mode="popLayout">
+                  {filteredArtworks.length > 0 ? (
+                    filteredArtworks.map((art, index) => (
+                      <motion.div
+                        layout
+                        key={art.id}
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ 
+                          delay: (index % 4) * 0.1,
+                          duration: 0.8,
+                          ease: [0.16, 1, 0.3, 1]
+                        }}
+                        className="group cursor-pointer"
+                        onClick={() => {
+                          setSelectedArtwork(art);
+                          setIsDetailOpen(true);
+                        }}
+                      >
+                        <div className={cn(
+                          "relative aspect-square overflow-hidden bg-brand-ink/5 mb-6 transition-all duration-700 ease-out group-hover:shadow-2xl group-hover:shadow-brand-ink/10 rounded-2xl",
+                        )}>
+                          <img 
+                            src={art.imageUrl} 
+                            alt={art.title}
+                            className="w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-0 bg-brand-ink/40 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center backdrop-blur-[2px]">
+                            <div className="translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                              <div className="bg-white px-8 py-4 rounded-full flex items-center gap-3 shadow-2xl">
+                                <Maximize2 className="w-4 h-4 text-brand-red" />
+                                <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-brand-ink">View Details</span>
+                              </div>
+                            </div>
+                          </div>
+                          {isAdmin && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setArtworkToDelete(art);
+                                setIsDeleteConfirmOpen(true);
+                              }}
+                              className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center border border-brand-red/20 shadow-sm text-brand-red hover:bg-brand-red hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="space-y-2 px-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-red">{art.category}</span>
+                            <span className="text-[10px] font-mono text-brand-ink/30 uppercase">#{art.id.slice(0, 4)}</span>
+                          </div>
+                          <h4 className="text-2xl font-sans font-bold tracking-tight text-brand-ink group-hover:text-brand-red transition-colors duration-300 uppercase">{art.title}</h4>
+                          <div className="h-[1px] w-full bg-brand-ink/10 my-2" />
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] uppercase tracking-[0.15em] text-brand-ink/40 font-medium">{art.medium || 'TRADITIONAL MUD AND MIRROR WORK'}</span>
+                            <span className="text-[10px] font-medium text-brand-ink/40">{art.year}</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="col-span-full py-24 text-center border-2 border-dashed border-brand-ink/10 rounded-2xl">
+                      <p className="text-brand-ink/20 uppercase tracking-[0.3em] text-xs">No artworks to display</p>
+                    </div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </motion.section>
+        )}
+
+        {currentView === 'exhibitions' && (
+          <motion.section 
+            key="exhibitions"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="py-32 px-6 md:px-12 relative z-10 min-h-screen flex flex-col items-center justify-center"
+          >
+            <button 
+              onClick={() => setCurrentView('home')}
+              className="absolute top-32 left-6 md:left-12 flex items-center gap-2 text-xs uppercase tracking-widest text-brand-red hover:gap-4 transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Home
+            </button>
+            <h2 className="text-6xl md:text-8xl font-serif font-bold tracking-tighter text-brand-ink uppercase mb-4">Exhibitions</h2>
+            <p className="text-xl md:text-2xl font-light tracking-[0.5em] text-brand-red uppercase">Coming Soon</p>
+          </motion.section>
+        )}
+
+        {currentView === 'about' && (
+          <motion.section 
+            key="about"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="py-32 px-6 md:px-12 relative z-10 min-h-screen flex flex-col items-center justify-center"
+          >
+            <button 
+              onClick={() => setCurrentView('home')}
+              className="absolute top-32 left-6 md:left-12 flex items-center gap-2 text-xs uppercase tracking-widest text-brand-red hover:gap-4 transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Home
+            </button>
+            <h2 className="text-6xl md:text-8xl font-serif font-bold tracking-tighter text-brand-ink uppercase mb-4">Nitya Patel</h2>
+            <p className="text-xl md:text-2xl font-light tracking-[0.5em] text-brand-red uppercase">Coming Soon</p>
+          </motion.section>
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
-      <footer className="py-24 px-6 border-t border-brand-ink/5 bg-brand-ink text-white">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
-          <div className="text-center md:text-left">
-            <h2 className="text-3xl font-light tracking-[0.3em] uppercase mb-4 text-brand-yellow">Nitya's Art</h2>
-            <p className="text-white/40 text-xs tracking-widest uppercase">© 2024 All Rights Reserved</p>
-          </div>
-          
-          <div className="flex gap-12 text-[10px] uppercase tracking-[0.3em] font-medium text-white/40">
-            <a href="#" className="hover:text-brand-yellow transition-colors">Privacy</a>
-            <a href="#" className="hover:text-brand-yellow transition-colors">Terms</a>
-            <a href="#" className="hover:text-brand-yellow transition-colors">Press</a>
+      <footer className="py-32 px-6 bg-brand-ink text-white overflow-hidden relative">
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-white/5" />
+        
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 mb-24">
+            <div className="space-y-12">
+              <motion.h2 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                className="text-7xl md:text-9xl font-serif italic tracking-tighter text-white"
+              >
+                Nitya's Art
+              </motion.h2>
+              <div className="max-w-md">
+                <p className="text-sm text-white/40 leading-relaxed uppercase tracking-widest">
+                  A digital sanctuary for fine art and traditional craftsmanship. Curating excellence since 2024.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+              <div className="space-y-6">
+                <h5 className="text-[10px] uppercase tracking-[0.4em] text-white/20 font-bold">Connect</h5>
+                <ul className="space-y-4 text-[11px] uppercase tracking-[0.2em] text-white/60">
+                  <li><a href="mailto:hello@nityasart.com" className="hover:text-brand-red transition-colors">Email Us</a></li>
+                  <li><a href="#" className="hover:text-brand-red transition-colors">Newsletter</a></li>
+                  <li><a href="#" className="hover:text-brand-red transition-colors">Contact</a></li>
+                </ul>
+              </div>
+            </div>
           </div>
 
-          <div className="flex gap-6">
-            <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-brand-red hover:border-brand-red transition-all cursor-pointer">
-              <Instagram className="w-4 h-4" />
+          <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
+            <p className="text-[9px] tracking-[0.5em] uppercase text-white/20">© 2024 NITYA'S ART GALLERY • ALL RIGHTS RESERVED</p>
+            
+            <div className="flex flex-col items-center md:items-end gap-2">
+              <p className="text-[10px] tracking-[0.3em] uppercase text-white/40 font-medium">
+                Developed by <span className="text-white/90 font-bold tracking-[0.4em]">JP DEVELOPER</span>
+              </p>
             </div>
-            <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-brand-blue hover:border-brand-blue transition-all cursor-pointer">
-              <Twitter className="w-4 h-4" />
-            </div>
-            <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-brand-yellow hover:border-brand-yellow hover:text-brand-ink transition-all cursor-pointer">
-              <Mail className="w-4 h-4" />
+            
+            <div className="flex gap-8 text-[9px] uppercase tracking-[0.3em] text-white/30">
+              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+              <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
             </div>
           </div>
         </div>
@@ -784,33 +917,6 @@ export default function App() {
 
             {/* Main Content Area */}
             <div className="relative z-10 flex-1 flex items-center justify-center p-4 md:p-12">
-              {/* Navigation Buttons */}
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const currentIndex = filteredArtworks.findIndex(art => art.id === selectedArtwork.id);
-                  const prevIndex = (currentIndex - 1 + filteredArtworks.length) % filteredArtworks.length;
-                  setSelectedArtwork(filteredArtworks[prevIndex]);
-                  setIsZoomed(false);
-                }}
-                className="absolute left-4 md:left-12 z-30 p-4 bg-white/5 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all border border-white/5"
-              >
-                <ArrowLeft className="w-6 h-6" />
-              </button>
-
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const currentIndex = filteredArtworks.findIndex(art => art.id === selectedArtwork.id);
-                  const nextIndex = (currentIndex + 1) % filteredArtworks.length;
-                  setSelectedArtwork(filteredArtworks[nextIndex]);
-                  setIsZoomed(false);
-                }}
-                className="absolute right-4 md:right-12 z-30 p-4 bg-white/5 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all border border-white/5"
-              >
-                <ArrowRight className="w-6 h-6" />
-              </button>
-
               {/* Image Display */}
               <div className="relative w-full h-full flex items-center justify-center">
                 <motion.div
@@ -864,17 +970,26 @@ export default function App() {
               )}
 
               {['Gallery', 'Exhibitions', 'About', 'Contact'].map((item, i) => (
-              <motion.a
+              <motion.button
                 key={item}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                href={`#${item.toLowerCase()}`}
-                onClick={() => setIsMenuOpen(false)}
-                className="text-4xl font-light tracking-widest uppercase hover:italic transition-all text-brand-ink hover:text-brand-red"
+                onClick={() => {
+                  if (item === 'Gallery') setCurrentView('gallery');
+                  else if (item === 'Exhibitions') setCurrentView('exhibitions');
+                  else if (item === 'About') setCurrentView('about');
+                  else if (item === 'Contact') return;
+                  else setCurrentView('home');
+                  setIsMenuOpen(false);
+                }}
+                className={cn(
+                  "text-4xl font-light tracking-widest uppercase hover:italic transition-all text-brand-ink hover:text-brand-red",
+                  item === 'Contact' && "cursor-default opacity-30 hover:text-brand-ink hover:not-italic"
+                )}
               >
                 {item}
-              </motion.a>
+              </motion.button>
             ))}
           </motion.div>
         )}
