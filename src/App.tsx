@@ -12,7 +12,11 @@ import {
   Info,
   Plus,
   LogOut,
-  LogIn
+  LogIn,
+  ArrowLeft,
+  Share2,
+  Copy,
+  Download
 } from 'lucide-react';
 import { cn } from './lib/utils';
 import { ARTWORKS } from './constants';
@@ -41,9 +45,11 @@ const CATEGORIES: Category[] = ['All', 'Oil Painting', 'Digital Art', 'Sculpture
 export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<Category>('All');
   const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -191,8 +197,54 @@ export default function App() {
   useEffect(() => {
     if (!selectedArtwork) {
       setIsZoomed(false);
+      setIsFullScreen(false);
     }
   }, [selectedArtwork]);
+
+  const handleDownload = async () => {
+    if (!selectedArtwork) return;
+    try {
+      const response = await fetch(selectedArtwork.imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedArtwork.title.replace(/\s+/g, '_')}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!selectedArtwork) return;
+    try {
+      await navigator.clipboard.writeText(selectedArtwork.imageUrl);
+      // Optional: Show a toast or feedback
+    } catch (error) {
+      console.error("Copy failed:", error);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!selectedArtwork) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: selectedArtwork.title,
+          text: selectedArtwork.description,
+          url: window.location.href,
+        });
+      } catch (error) {
+        console.error("Share failed:", error);
+      }
+    } else {
+      handleCopy();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-brand-cream text-brand-ink font-sans selection:bg-brand-red selection:text-white">
@@ -250,21 +302,7 @@ export default function App() {
 
       {/* Hero Section */}
       <header className="relative h-screen flex flex-col justify-center px-6 md:px-24 overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-brand-cream/60 via-transparent to-brand-cream z-10" />
-          {artworks.length > 0 ? (
-            <motion.img 
-              initial={{ scale: 1.1, opacity: 0 }}
-              animate={{ scale: 1, opacity: 0.8 }}
-              transition={{ duration: 2 }}
-              src={artworks[0].imageUrl} 
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="w-full h-full bg-brand-yellow/10" />
-          )}
-        </div>
+        <div className="absolute inset-0 z-0 bg-brand-cream" />
 
         <div className="relative z-20 max-w-4xl">
           <motion.p 
@@ -335,7 +373,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
             <AnimatePresence mode="popLayout">
               {filteredArtworks.length > 0 ? (
                 filteredArtworks.map((art, index) => (
@@ -345,30 +383,36 @@ export default function App() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ delay: index * 0.1 }}
+                    transition={{ delay: index * 0.05 }}
                     className="group cursor-pointer"
-                    onClick={() => setSelectedArtwork(art)}
+                    onClick={() => {
+                      setSelectedArtwork(art);
+                      setIsDetailOpen(true);
+                    }}
                   >
                     <div className={cn(
-                      "relative aspect-square overflow-hidden bg-brand-ink/5 mb-6 shadow-xl transition-all duration-500",
-                      art.category === 'Lippan Art' ? "rounded-full border-4 border-brand-yellow/30" : "rounded-sm"
+                      "relative aspect-[3/4] overflow-hidden bg-brand-ink/5 mb-6 shadow-xl transition-all duration-500",
+                      art.category === 'Lippan Art' ? "rounded-[32px] border-2 border-brand-yellow/20" : "rounded-xl"
                     )}>
                       <img 
                         src={art.imageUrl} 
                         alt={art.title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         referrerPolicy="no-referrer"
                       />
-                      <div className="absolute inset-0 bg-brand-ink/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Maximize2 className="w-8 h-8 text-white" />
+                      <div className="absolute inset-0 bg-brand-ink/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
+                          <Info className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="text-white text-[8px] uppercase tracking-[0.3em] font-bold">View Details</span>
                       </div>
                     </div>
-                    <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-start px-1">
                       <div>
-                        <h4 className="text-lg font-light tracking-tight mb-1 text-brand-ink">{art.title}</h4>
-                        <p className="text-[10px] uppercase tracking-widest text-brand-red font-bold">{art.medium}</p>
+                        <p className="text-[9px] uppercase tracking-[0.3em] text-brand-red font-bold mb-1">{art.category}</p>
+                        <h4 className="text-lg font-light tracking-tight text-brand-ink group-hover:text-brand-red transition-colors">{art.title}</h4>
                       </div>
-                      <span className="text-xs font-serif italic text-brand-ink/20">{art.year}</span>
+                      <span className="text-xs font-serif italic text-brand-ink/30">{art.year}</span>
                     </div>
                   </motion.div>
                 ))
@@ -434,24 +478,24 @@ export default function App() {
 
               <form onSubmit={handleAddArt} className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-[0.2em] text-white/60">Title</label>
+                  <label className="text-[10px] uppercase tracking-[0.2em] text-white/80">Title</label>
                   <input 
                     required
                     type="text"
                     value={newArt.title}
                     onChange={e => setNewArt(prev => ({ ...prev, title: e.target.value }))}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-red/40 transition-colors text-white placeholder:text-white/20"
+                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-red/60 transition-colors text-white placeholder:text-white/40"
                     placeholder="Artwork Title"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-[0.2em] text-white/60">Category</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] text-white/80">Category</label>
                     <select 
                       value={newArt.category}
                       onChange={e => setNewArt(prev => ({ ...prev, category: e.target.value as any }))}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-red/40 transition-colors appearance-none text-white"
+                      className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-red/60 transition-colors appearance-none text-white"
                     >
                       {CATEGORIES.map(cat => (
                         <option key={cat} value={cat} className="bg-neutral-900 text-white">{cat}</option>
@@ -459,18 +503,18 @@ export default function App() {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-[0.2em] text-white/60">Year</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] text-white/80">Year</label>
                     <input 
                       type="text"
                       value={newArt.year}
                       onChange={e => setNewArt(prev => ({ ...prev, year: e.target.value }))}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-red/40 transition-colors text-white"
+                      className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-red/60 transition-colors text-white"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-[0.2em] text-white/60">Image</label>
+                  <label className="text-[10px] uppercase tracking-[0.2em] text-white/80">Image</label>
                   <div className="relative group">
                     <input 
                       required
@@ -479,13 +523,13 @@ export default function App() {
                       onChange={handleImageUpload}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     />
-                    <div className="w-full aspect-video bg-white/5 border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center gap-4 group-hover:bg-white/10 transition-all">
+                    <div className="w-full aspect-video bg-white/10 border border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center gap-4 group-hover:bg-white/20 transition-all">
                       {newArt.imageUrl ? (
                         <img src={newArt.imageUrl} className="w-full h-full object-cover rounded-xl" />
                       ) : (
                         <>
-                          <Plus className="w-8 h-8 text-white/20" />
-                          <p className="text-[10px] uppercase tracking-widest text-white/60">Click to upload image</p>
+                          <Plus className="w-8 h-8 text-white/40" />
+                          <p className="text-[10px] uppercase tracking-widest text-white/80">Click to upload image</p>
                         </>
                       )}
                     </div>
@@ -493,11 +537,11 @@ export default function App() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-[0.2em] text-white/60">Description</label>
+                  <label className="text-[10px] uppercase tracking-[0.2em] text-white/80">Description</label>
                   <textarea 
                     value={newArt.description}
                     onChange={e => setNewArt(prev => ({ ...prev, description: e.target.value }))}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-red/40 transition-colors h-32 resize-none text-white placeholder:text-white/20"
+                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-red/60 transition-colors h-32 resize-none text-white placeholder:text-white/40"
                     placeholder="Describe your artwork..."
                   />
                 </div>
@@ -514,79 +558,222 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Artwork Modal */}
+      {/* Detail View Modal (The Step from your Screenshot) */}
       <AnimatePresence>
-        {selectedArtwork && (
-          <motion.div 
+        {isDetailOpen && selectedArtwork && (
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6 md:p-12 bg-brand-cream/95 backdrop-blur-xl"
+            className="fixed inset-0 z-[150] bg-brand-cream overflow-y-auto"
           >
-            <button 
-              onClick={() => setSelectedArtwork(null)}
-              className="absolute top-8 right-8 p-2 hover:bg-brand-ink/5 rounded-full transition-colors z-[110] text-brand-ink"
-            >
-              <X className="w-8 h-8" />
-            </button>
-
-            <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-              <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className={cn(
-                  "relative aspect-square overflow-hidden shadow-2xl transition-all duration-500",
-                  selectedArtwork.category === 'Lippan Art' && !isZoomed ? "rounded-full border-8 border-brand-yellow/30" : "rounded-sm",
-                  isZoomed ? "cursor-zoom-out" : "cursor-zoom-in"
-                )}
-                onClick={() => setIsZoomed(!isZoomed)}
-              >
-                <motion.img 
-                  animate={{ 
-                    scale: isZoomed ? 1.5 : 1,
-                    x: isZoomed ? 0 : 0, // Could add mouse follow here but scale is a good start
+            <div className="min-h-screen flex flex-col">
+              {/* Header */}
+              <div className="p-6 flex justify-between items-center sticky top-0 bg-brand-cream/80 backdrop-blur-md z-10">
+                <button 
+                  onClick={() => {
+                    setIsDetailOpen(false);
+                    setSelectedArtwork(null);
                   }}
-                  transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-                  src={selectedArtwork.imageUrl} 
-                  alt={selectedArtwork.title}
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-                {!isZoomed && (
-                  <div className="absolute bottom-4 right-4 bg-black/40 backdrop-blur-md p-2 rounded-full text-white/80 pointer-events-none">
-                    <Maximize2 className="w-4 h-4" />
-                  </div>
-                )}
-              </motion.div>
+                  className="p-2 hover:bg-brand-ink/5 rounded-full transition-colors"
+                >
+                  <ArrowLeft className="w-6 h-6" />
+                </button>
+                <div className="flex gap-4">
+                  <button onClick={handleShare} className="p-2 hover:bg-brand-ink/5 rounded-full transition-colors">
+                    <Share2 className="w-5 h-5" />
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setIsDetailOpen(false);
+                      setSelectedArtwork(null);
+                    }}
+                    className="p-2 hover:bg-brand-ink/5 rounded-full transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
 
-              <motion.div
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                <span className="text-[10px] uppercase tracking-[0.4em] text-brand-red font-bold mb-4 block">
-                  {selectedArtwork.category} — {selectedArtwork.year}
-                </span>
-                <h2 className="text-5xl font-light mb-8 tracking-tight text-brand-ink">{selectedArtwork.title}</h2>
-                <p className="text-brand-ink/70 leading-relaxed mb-12 text-lg font-light">
-                  {selectedArtwork.description}
-                </p>
-                
-                <div className="space-y-6 border-t border-brand-ink/10 pt-8">
-                  <div className="flex justify-between text-xs uppercase tracking-widest">
-                    <span className="text-brand-ink/40">Medium</span>
-                    <span className="text-brand-ink font-bold">{selectedArtwork.medium}</span>
-                  </div>
-                  <div className="flex justify-between text-xs uppercase tracking-widest">
-                    <span className="text-brand-ink/40">Dimensions</span>
-                    <span className="text-brand-ink font-bold">{selectedArtwork.dimensions}</span>
-                  </div>
+              {/* Content */}
+              <div className="flex-1 max-w-4xl mx-auto w-full px-6 pb-24">
+                {/* Image Section */}
+                <div className="relative mb-16 flex justify-center">
+                  <motion.div
+                    layoutId={`art-${selectedArtwork.id}`}
+                    className={cn(
+                      "relative group cursor-zoom-in",
+                      selectedArtwork.category === 'Lippan Art' ? "w-72 h-72 md:w-96 md:h-96 rounded-full shadow-2xl overflow-hidden border-8 border-white" : "w-full rounded-2xl shadow-2xl overflow-hidden"
+                    )}
+                    onClick={() => setIsFullScreen(true)}
+                  >
+                    <img 
+                      src={selectedArtwork.imageUrl} 
+                      alt={selectedArtwork.title}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-brand-ink/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="bg-white/90 backdrop-blur-md px-6 py-3 rounded-full flex items-center gap-2 shadow-xl">
+                        <Maximize2 className="w-4 h-4 text-brand-red" />
+                        <span className="text-[10px] uppercase tracking-widest font-bold text-brand-ink">View Big Size</span>
+                      </div>
+                    </div>
+                  </motion.div>
                 </div>
 
-                <button className="mt-12 w-full py-4 bg-brand-red text-white text-xs uppercase tracking-[0.3em] font-bold hover:bg-brand-red/90 transition-all shadow-lg shadow-brand-red/20">
-                  Inquire About This Piece
+                {/* Text Section */}
+                <div className="space-y-12">
+                  <div>
+                    <p className="text-xs md:text-sm uppercase tracking-[0.4em] text-brand-red font-bold mb-4">
+                      {selectedArtwork.category} — {selectedArtwork.year}
+                    </p>
+                    <h2 className="text-5xl md:text-7xl font-light tracking-tighter text-brand-ink mb-8 uppercase">
+                      {selectedArtwork.title}
+                    </h2>
+                    <div className="w-24 h-px bg-brand-ink/10" />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div className="space-y-8">
+                      <div>
+                        <h5 className="text-[10px] uppercase tracking-[0.3em] text-brand-ink/40 font-bold mb-3">Medium</h5>
+                        <p className="text-sm md:text-base font-bold text-brand-ink uppercase leading-relaxed">
+                          {selectedArtwork.medium}
+                        </p>
+                      </div>
+                      <div>
+                        <h5 className="text-[10px] uppercase tracking-[0.3em] text-brand-ink/40 font-bold mb-3">Dimensions</h5>
+                        <p className="text-sm md:text-base font-medium text-brand-ink/60 uppercase">
+                          {selectedArtwork.dimensions || 'Dimensions on Request'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <p className="text-brand-ink/70 leading-relaxed font-serif italic text-lg">
+                        {selectedArtwork.description || "This piece represents a fusion of traditional techniques and modern artistic vision, exploring themes of heritage and contemporary expression."}
+                      </p>
+                      <div className="flex gap-4 pt-4">
+                        <button className="flex-1 py-4 bg-brand-red text-white text-[10px] uppercase tracking-[0.3em] font-bold rounded-full hover:bg-brand-red/90 transition-all shadow-lg shadow-brand-red/20">
+                          Inquire About Piece
+                        </button>
+                        <button 
+                          onClick={handleDownload}
+                          className="p-4 border-2 border-brand-ink/10 rounded-full hover:border-brand-red hover:text-brand-red transition-all"
+                        >
+                          <Download className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Fullscreen View (Big Size) */}
+      <AnimatePresence>
+        {isFullScreen && selectedArtwork && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black flex flex-col"
+          >
+            {/* Immersive Background */}
+            <div className="absolute inset-0 z-0 opacity-40">
+              <img 
+                src={selectedArtwork.imageUrl} 
+                className="w-full h-full object-cover blur-3xl scale-110"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+
+            {/* Header Controls */}
+            <div className="relative z-20 p-6 flex items-center justify-between">
+              <button 
+                onClick={() => {
+                  setIsFullScreen(false);
+                }}
+                className="group flex items-center gap-3 px-6 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-full text-white transition-all border border-white/10"
+              >
+                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                <span className="text-[10px] uppercase tracking-[0.3em] font-bold">Back to Details</span>
+              </button>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={handleShare}
+                  className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-full text-white transition-all border border-white/10"
+                  title="Share"
+                >
+                  <Share2 className="w-5 h-5" />
                 </button>
-              </motion.div>
+                <button 
+                  onClick={handleDownload}
+                  className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-full text-white transition-all border border-white/10"
+                  title="Download"
+                >
+                  <Download className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div className="relative z-10 flex-1 flex items-center justify-center p-4 md:p-12">
+              {/* Navigation Buttons */}
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const currentIndex = filteredArtworks.findIndex(art => art.id === selectedArtwork.id);
+                  const prevIndex = (currentIndex - 1 + filteredArtworks.length) % filteredArtworks.length;
+                  setSelectedArtwork(filteredArtworks[prevIndex]);
+                  setIsZoomed(false);
+                }}
+                className="absolute left-4 md:left-12 z-30 p-4 bg-white/5 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all border border-white/5"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const currentIndex = filteredArtworks.findIndex(art => art.id === selectedArtwork.id);
+                  const nextIndex = (currentIndex + 1) % filteredArtworks.length;
+                  setSelectedArtwork(filteredArtworks[nextIndex]);
+                  setIsZoomed(false);
+                }}
+                className="absolute right-4 md:right-12 z-30 p-4 bg-white/5 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all border border-white/5"
+              >
+                <ArrowRight className="w-6 h-6" />
+              </button>
+
+              {/* Image Display */}
+              <div className="relative w-full h-full flex items-center justify-center">
+                <motion.div
+                  key={selectedArtwork.id}
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className={cn(
+                    "relative max-w-full max-h-full shadow-[0_0_100px_rgba(0,0,0,0.5)] transition-all duration-700",
+                    selectedArtwork.category === 'Lippan Art' && !isZoomed ? "rounded-full border-[12px] border-brand-yellow/20" : "rounded-lg",
+                    isZoomed ? "cursor-zoom-out" : "cursor-zoom-in"
+                  )}
+                  onClick={() => setIsZoomed(!isZoomed)}
+                >
+                  <motion.img
+                    animate={{ scale: isZoomed ? 1.5 : 1 }}
+                    transition={{ type: 'spring', stiffness: 150, damping: 20 }}
+                    src={selectedArtwork.imageUrl}
+                    alt={selectedArtwork.title}
+                    className="max-w-full max-h-[70vh] md:max-h-[80vh] object-contain rounded-inherit"
+                    referrerPolicy="no-referrer"
+                  />
+                </motion.div>
+              </div>
             </div>
           </motion.div>
         )}
