@@ -17,7 +17,9 @@ import {
   Share2,
   Copy,
   Download,
-  Trash2
+  Trash2,
+  Link2,
+  LayoutDashboard
 } from 'lucide-react';
 import { cn } from './lib/utils';
 import { ARTWORKS } from './constants';
@@ -45,6 +47,108 @@ import { User } from 'firebase/auth';
 
 const CATEGORIES: Category[] = ['All', 'Oil Painting', 'Digital Art', 'Sculpture', 'Photography', 'Lippan Art'];
 
+const WhatsAppIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.94 3.659 1.437 5.634 1.437h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+  </svg>
+);
+
+const FacebookIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current">
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+  </svg>
+);
+
+const XIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current">
+    <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932 6.064-6.932zm-1.292 19.49h2.039L6.486 3.24H4.298L17.609 20.643z" />
+  </svg>
+);
+
+const ShareModal = ({ isOpen, onClose, title, url }: { isOpen: boolean, onClose: () => void, title: string, url: string }) => {
+  const [copied, setCopied] = useState(false);
+
+  const shareLinks = [
+    {
+      name: 'WhatsApp',
+      icon: <WhatsAppIcon />,
+      url: `https://wa.me/?text=${encodeURIComponent(`${title} ${url}`)}`,
+      color: 'bg-[#25D366]'
+    },
+    {
+      name: 'Facebook',
+      icon: <FacebookIcon />,
+      url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+      color: 'bg-[#1877F2]'
+    },
+    {
+      name: 'X (Twitter)',
+      icon: <XIcon />,
+      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
+      color: 'bg-black'
+    },
+    {
+      name: 'Copy Link',
+      icon: <Link2 className="w-5 h-5" />,
+      action: () => {
+        navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      },
+      color: 'bg-brand-ink'
+    }
+  ];
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-brand-ink/60 backdrop-blur-sm"
+          onClick={onClose}
+        >
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl border border-brand-ink/5"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-medium text-brand-ink">Share</h3>
+              <button onClick={onClose} className="p-2 hover:bg-brand-ink/5 rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {shareLinks.map(link => (
+                <a 
+                  key={link.name}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={link.action ? (e) => { e.preventDefault(); link.action(); } : undefined}
+                  className={cn(
+                    "flex flex-col items-center gap-3 p-4 rounded-xl text-white transition-all hover:scale-105",
+                    link.color
+                  )}
+                >
+                  {link.icon}
+                  <span className="text-[10px] uppercase tracking-widest font-bold">
+                    {link.name === 'Copy Link' && copied ? 'Copied!' : link.name}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 export default function App() {
   const [currentView, setCurrentView] = useState<'home' | 'gallery' | 'exhibitions' | 'about'>('home');
   const [selectedCategory, setSelectedCategory] = useState<Category>('All');
@@ -55,6 +159,8 @@ export default function App() {
   const [isZoomed, setIsZoomed] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [artworks, setArtworks] = useState<Artwork[]>([]);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareData, setShareData] = useState({ title: '', url: '' });
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -250,20 +356,28 @@ export default function App() {
     }
   };
 
-  const handleShare = async () => {
-    if (!selectedArtwork) return;
+  const handleShare = async (artwork?: Artwork) => {
+    const art = artwork || selectedArtwork;
+    const title = art ? `Check out this artwork: ${art.title}` : "Explore NITYA'S ART - A Curated Art Collection";
+    const url = art ? `${window.location.origin}/?art=${art.id}` : window.location.href;
+    
+    setShareData({ title, url });
+
     if (navigator.share) {
       try {
         await navigator.share({
-          title: selectedArtwork.title,
-          text: selectedArtwork.description,
-          url: window.location.href,
+          title,
+          text: art?.description || "A premium digital space dedicated to the preservation and exhibition of contemporary fine art.",
+          url,
         });
       } catch (error) {
-        console.error("Share failed:", error);
+        if ((error as any).name !== 'AbortError') {
+          console.error("Share failed:", error);
+          setIsShareModalOpen(true);
+        }
       }
     } else {
-      handleCopy();
+      setIsShareModalOpen(true);
     }
   };
 
@@ -316,21 +430,51 @@ export default function App() {
           </div>
 
           {user ? (
-            <button 
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-medium text-brand-ink/60 hover:text-brand-red transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
+            <div className="flex items-center gap-4">
+              {isAdmin && (
+                <button 
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="p-2 hover:bg-brand-ink/5 rounded-full transition-colors text-brand-ink group relative"
+                  title="Dashboard"
+                >
+                  <LayoutDashboard className="w-5 h-5" />
+                  <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-brand-ink text-white text-[8px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap uppercase tracking-widest">Dashboard</span>
+                </button>
+              )}
+              <button 
+                onClick={() => handleShare()}
+                className="p-2 hover:bg-brand-ink/5 rounded-full transition-colors text-brand-ink group relative"
+                title="Share"
+              >
+                <Share2 className="w-5 h-5" />
+                <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-brand-ink text-white text-[8px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap uppercase tracking-widest">Share</span>
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-medium text-brand-ink/60 hover:text-brand-red transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            </div>
           ) : (
-            <button 
-              onClick={handleLogin}
-              className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-medium text-brand-ink/60 hover:text-brand-red transition-colors"
-            >
-              <LogIn className="w-4 h-4" />
-              <span className="hidden sm:inline">Admin Login</span>
-            </button>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => handleShare()}
+                className="p-2 hover:bg-brand-ink/5 rounded-full transition-colors text-brand-ink group relative"
+                title="Share"
+              >
+                <Share2 className="w-5 h-5" />
+                <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-brand-ink text-white text-[8px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap uppercase tracking-widest">Share</span>
+              </button>
+              <button 
+                onClick={handleLogin}
+                className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-medium text-brand-ink/60 hover:text-brand-red transition-colors"
+              >
+                <LogIn className="w-4 h-4" />
+                <span className="hidden sm:inline">Admin Login</span>
+              </button>
+            </div>
           )}
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -969,7 +1113,7 @@ export default function App() {
                 </motion.button>
               )}
 
-              {['Gallery', 'Exhibitions', 'About', 'Contact'].map((item, i) => (
+              {['Gallery', 'Exhibitions', 'About', 'Contact', 'Share'].map((item, i) => (
               <motion.button
                 key={item}
                 initial={{ opacity: 0, y: 20 }}
@@ -980,6 +1124,7 @@ export default function App() {
                   else if (item === 'Exhibitions') setCurrentView('exhibitions');
                   else if (item === 'About') setCurrentView('about');
                   else if (item === 'Contact') return;
+                  else if (item === 'Share') handleShare();
                   else setCurrentView('home');
                   setIsMenuOpen(false);
                 }}
@@ -994,6 +1139,13 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ShareModal 
+        isOpen={isShareModalOpen} 
+        onClose={() => setIsShareModalOpen(false)} 
+        title={shareData.title} 
+        url={shareData.url} 
+      />
 
       {/* Delete Confirmation Dialog */}
       <AnimatePresence>
