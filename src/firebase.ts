@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, Timestamp, getDocFromServer, doc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, Timestamp, getDocFromServer, doc, deleteDoc } from 'firebase/firestore';
 
 // Import the Firebase configuration
 // @ts-ignore
@@ -83,4 +83,4 @@ async function testConnection() {
 }
 testConnection();
 
-export { collection, addDoc, onSnapshot, query, orderBy, Timestamp, signInWithPopup, signOut, onAuthStateChanged };
+export { collection, addDoc, onSnapshot, query, orderBy, Timestamp, signInWithPopup, signOut, onAuthStateChanged, deleteDoc, doc };

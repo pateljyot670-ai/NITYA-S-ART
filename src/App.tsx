@@ -16,7 +16,8 @@ import {
   ArrowLeft,
   Share2,
   Copy,
-  Download
+  Download,
+  Trash2
 } from 'lucide-react';
 import { cn } from './lib/utils';
 import { ARTWORKS } from './constants';
@@ -36,7 +37,9 @@ import {
   orderBy,
   Timestamp,
   handleFirestoreError,
-  OperationType
+  OperationType,
+  deleteDoc,
+  doc
 } from './firebase';
 import { User } from 'firebase/auth';
 
@@ -63,6 +66,23 @@ export default function App() {
   });
 
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [artworkToDelete, setArtworkToDelete] = useState<Artwork | null>(null);
+
+  const handleDelete = async () => {
+    if (!artworkToDelete || !isAdmin) return;
+    
+    try {
+      await deleteDoc(doc(db, 'artworks', artworkToDelete.id));
+      setIsDeleteConfirmOpen(false);
+      setArtworkToDelete(null);
+      if (selectedArtwork?.id === artworkToDelete.id) {
+        setIsDetailOpen(false);
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `artworks/${artworkToDelete.id}`);
+    }
+  };
 
   // Auth State Listener
   useEffect(() => {
@@ -346,25 +366,32 @@ export default function App() {
       {/* Gallery Section */}
       <section id="gallery" className="py-32 px-6 md:px-12 relative z-10">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-24 gap-8">
-            <div>
-              <h3 className="text-4xl font-light mb-4 tracking-tight text-brand-ink">The Collection</h3>
-              <p className="text-brand-ink/60 max-w-md text-sm leading-relaxed">
-                A curated selection of works spanning digital and traditional mediums, 
-                celebrating the vibrant heritage of Lippan art and modern expression.
-              </p>
+          {/* Gallery Header - Dashboard Style */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16 border-b border-brand-ink/5 pb-12">
+            <div className="space-y-4">
+              <h3 className="text-5xl font-light tracking-tight text-brand-ink">Archive <span className="text-brand-ink/20 font-mono text-2xl">v1.0</span></h3>
+              <div className="flex gap-8 pt-2">
+                <div className="flex flex-col">
+                  <span className="text-[8px] uppercase tracking-widest text-brand-ink/40 mb-1">Total Assets</span>
+                  <span className="text-xl font-mono">{artworks.length}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[8px] uppercase tracking-widest text-brand-ink/40 mb-1">Categories</span>
+                  <span className="text-xl font-mono">{CATEGORIES.length - 1}</span>
+                </div>
+              </div>
             </div>
             
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-2">
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
                   className={cn(
-                    "text-[10px] uppercase tracking-[0.2em] px-6 py-2 rounded-full border-2 transition-all",
+                    "text-[9px] font-mono uppercase tracking-widest px-4 py-2 rounded-md border transition-all",
                     selectedCategory === cat 
-                      ? "bg-brand-red text-white border-brand-red" 
-                      : "border-brand-ink/10 text-brand-ink/40 hover:border-brand-red/40"
+                      ? "bg-brand-ink text-white border-brand-ink" 
+                      : "border-brand-ink/10 text-brand-ink/40 hover:border-brand-ink/40 hover:bg-brand-ink/5"
                   )}
                 >
                   {cat}
@@ -373,7 +400,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             <AnimatePresence mode="popLayout">
               {filteredArtworks.length > 0 ? (
                 filteredArtworks.map((art, index) => (
@@ -383,7 +410,13 @@ export default function App() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ delay: index * 0.05 }}
+                    whileHover={{ y: -8 }}
+                    transition={{ 
+                      delay: index * 0.05,
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 20
+                    }}
                     className="group cursor-pointer"
                     onClick={() => {
                       setSelectedArtwork(art);
@@ -391,28 +424,43 @@ export default function App() {
                     }}
                   >
                     <div className={cn(
-                      "relative aspect-[3/4] overflow-hidden bg-brand-ink/5 mb-6 shadow-xl transition-all duration-500",
-                      art.category === 'Lippan Art' ? "rounded-[32px] border-2 border-brand-yellow/20" : "rounded-xl"
+                      "relative aspect-square overflow-hidden bg-brand-ink/5 mb-4 shadow-sm transition-all duration-500 group-hover:shadow-md border border-brand-ink/5",
+                      "rounded-lg"
                     )}>
                       <img 
                         src={art.imageUrl} 
                         alt={art.title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                         referrerPolicy="no-referrer"
                       />
-                      <div className="absolute inset-0 bg-brand-ink/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
-                          <Info className="w-5 h-5 text-white" />
+                      {isAdmin && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setArtworkToDelete(art);
+                            setIsDeleteConfirmOpen(true);
+                          }}
+                          className="absolute top-2 left-2 z-20 w-8 h-8 rounded-md bg-white/90 backdrop-blur-md flex items-center justify-center border border-brand-red/20 shadow-sm text-brand-red hover:bg-brand-red hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-8 h-8 rounded-md bg-white/90 backdrop-blur-md flex items-center justify-center border border-brand-ink/10 shadow-sm">
+                          <Info className="w-4 h-4 text-brand-ink" />
                         </div>
-                        <span className="text-white text-[8px] uppercase tracking-[0.3em] font-bold">View Details</span>
                       </div>
                     </div>
-                    <div className="flex justify-between items-start px-1">
-                      <div>
-                        <p className="text-[9px] uppercase tracking-[0.3em] text-brand-red font-bold mb-1">{art.category}</p>
-                        <h4 className="text-lg font-light tracking-tight text-brand-ink group-hover:text-brand-red transition-colors">{art.title}</h4>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[8px] font-mono uppercase tracking-widest text-brand-red">{art.category}</span>
+                        <span className="text-[8px] font-mono text-brand-ink/30">#{art.id.slice(0, 4)}</span>
                       </div>
-                      <span className="text-xs font-serif italic text-brand-ink/30">{art.year}</span>
+                      <h4 className="text-sm font-medium tracking-tight text-brand-ink group-hover:text-brand-red transition-colors truncate">{art.title}</h4>
+                      <div className="flex items-center justify-between pt-1 border-t border-brand-ink/5">
+                        <span className="text-[9px] font-mono text-brand-ink/40 uppercase tracking-tighter">{art.medium || 'Mixed Media'}</span>
+                        <span className="text-[9px] font-mono text-brand-ink/60">{art.year}</span>
+                      </div>
                     </div>
                   </motion.div>
                 ))
@@ -580,6 +628,18 @@ export default function App() {
                   <ArrowLeft className="w-6 h-6" />
                 </button>
                 <div className="flex gap-4">
+                  {isAdmin && (
+                    <button 
+                      onClick={() => {
+                        setArtworkToDelete(selectedArtwork);
+                        setIsDeleteConfirmOpen(true);
+                      }}
+                      className="p-2 hover:bg-brand-red/10 text-brand-red rounded-full transition-colors"
+                      title="Delete Artwork"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  )}
                   <button onClick={handleShare} className="p-2 hover:bg-brand-ink/5 rounded-full transition-colors">
                     <Share2 className="w-5 h-5" />
                   </button>
@@ -816,6 +876,50 @@ export default function App() {
                 {item}
               </motion.a>
             ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Dialog */}
+      <AnimatePresence>
+        {isDeleteConfirmOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-brand-ink/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl border border-brand-ink/5"
+            >
+              <div className="w-16 h-16 rounded-full bg-brand-red/10 flex items-center justify-center mb-6 mx-auto">
+                <Trash2 className="w-8 h-8 text-brand-red" />
+              </div>
+              <h3 className="text-xl font-medium text-center mb-2 text-brand-ink">Delete Artwork?</h3>
+              <p className="text-brand-ink/60 text-sm text-center mb-8 leading-relaxed">
+                Are you sure you want to delete <span className="font-bold text-brand-ink">"{artworkToDelete?.title}"</span>? This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setIsDeleteConfirmOpen(false);
+                    setArtworkToDelete(null);
+                  }}
+                  className="flex-1 px-6 py-3 rounded-xl border border-brand-ink/10 text-brand-ink/60 text-sm font-medium hover:bg-brand-ink/5 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="flex-1 px-6 py-3 rounded-xl bg-brand-red text-white text-sm font-medium hover:bg-brand-red/90 transition-colors shadow-lg shadow-brand-red/20"
+                >
+                  Confirm
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
