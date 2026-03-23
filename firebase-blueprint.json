@@ -1,0 +1,28 @@
+{
+  "entities": {
+    "Artwork": {
+      "title": "Artwork",
+      "description": "A piece of art in the gallery",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID" },
+        "title": { "type": "string", "description": "Title of the artwork" },
+        "imageUrl": { "type": "string", "description": "URL of the image" },
+        "category": { "type": "string", "description": "Category of the art" },
+        "medium": { "type": "string", "description": "Medium used" },
+        "year": { "type": "string", "description": "Year of creation" },
+        "description": { "type": "string", "description": "Detailed description" },
+        "dimensions": { "type": "string", "description": "Dimensions of the piece" },
+        "authorUid": { "type": "string", "description": "UID of the uploader" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["title", "imageUrl", "category", "medium", "year", "authorUid", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/artworks": {
+      "schema": "Artwork",
+      "description": "Collection of all artworks in the gallery"
+    }
+  }
+}

@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: artworks
+    // Document ID: auto-generated
+    // Fields:
+    //   - title: string (required) - Title of the artwork
+    //   - imageUrl: string (required) - URL of the image
+    //   - category: string (required) - Category of the art
+    //   - medium: string (required) - Medium used
+    //   - year: string (required) - Year of creation
+    //   - description: string (optional) - Detailed description
+    //   - dimensions: string (optional) - Dimensions of the piece
+    //   - authorUid: string (required) - UID of the uploader
+    //   - createdAt: timestamp (required) - Creation timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (request.auth.token.email == "pateljyot670@gmail.com" && request.auth.token.email_verified == true);
+    }
+
+    function isValidArtwork(data) {
+      return data.keys().hasAll(['title', 'imageUrl', 'category', 'medium', 'year', 'authorUid', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.imageUrl is string && data.imageUrl.size() > 0 &&
+             data.category is string &&
+             data.medium is string &&
+             data.year is string &&
+             data.authorUid == request.auth.uid &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /artworks/{artworkId} {
+      // Publicly readable
+      allow read: if true;
+
+      // Only admin can create or update
+      allow create: if isAdmin() && isValidArtwork(request.resource.data);
+      allow update: if isAdmin() && isValidArtwork(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
