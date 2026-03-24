@@ -49,7 +49,7 @@ import {
 } from './firebase';
 import { User } from 'firebase/auth';
 
-const CATEGORIES: Category[] = ['All', 'CANVAS PAINTING', 'Digital Art', 'Sculpture', 'Photography', 'Lippan Art'];
+const CATEGORIES: Category[] = ['All', 'CANVAS PAINTING', 'Digital Art', 'Sculpture', 'Photography', 'Lippan Art', 'MANDALA ART', 'WARLI PAINTING', 'WATER COLOUR PAINTING', 'DESIGNED PRODUCT'];
 
 const WhatsAppIcon = () => (
   <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current">

@@ -18,4 +18,4 @@ export interface Section {
   updatedAt: any;
 }
 
-export type Category = 'All' | 'CANVAS PAINTING' | 'Digital Art' | 'Sculpture' | 'Photography' | 'Lippan Art';
+export type Category = 'All' | 'CANVAS PAINTING' | 'Digital Art' | 'Sculpture' | 'Photography' | 'Lippan Art' | 'MANDALA ART' | 'WARLI PAINTING' | 'WATER COLOUR PAINTING' | 'DESIGNED PRODUCT';
