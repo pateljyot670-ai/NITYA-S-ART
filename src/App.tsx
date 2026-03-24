@@ -1251,10 +1251,22 @@ export default function App() {
                       <p className="text-brand-ink/70 leading-relaxed font-serif italic text-lg">
                         {selectedArtwork.description || "This piece represents a fusion of traditional techniques and modern artistic vision, exploring themes of heritage and contemporary expression."}
                       </p>
-                      <div className="flex gap-4 pt-4">
+                      <div className="flex flex-wrap gap-4 pt-4">
                         <button className="flex-1 py-4 bg-brand-red text-white text-[10px] uppercase tracking-[0.3em] font-bold rounded-full hover:bg-brand-red/90 transition-all shadow-lg shadow-brand-red/20">
                           Inquire About Piece
                         </button>
+                        {isAdmin && (
+                          <button 
+                            onClick={() => {
+                              setArtworkToEdit(selectedArtwork);
+                              setIsEditModalOpen(true);
+                            }}
+                            className="p-4 border-2 border-brand-ink/10 rounded-full hover:border-brand-ink hover:bg-brand-ink hover:text-white transition-all text-brand-ink"
+                            title="Edit Artwork"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </button>
+                        )}
                         <button 
                           onClick={handleDownload}
                           className="p-4 border-2 border-brand-ink/10 rounded-full hover:border-brand-red hover:text-brand-red transition-all"
@@ -1353,50 +1365,97 @@ export default function App() {
       <AnimatePresence>
         {isMenuOpen && (
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="fixed inset-0 z-40 bg-brand-cream flex flex-col items-center justify-center gap-10"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-brand-cream/95 backdrop-blur-xl flex flex-col p-8 overflow-y-auto"
             >
-              {isAdmin && (
+              <div className="flex justify-between items-center mb-12">
+                <span className="text-xl font-serif font-bold tracking-tighter text-brand-ink">NITYA'S ART</span>
+                <button 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="p-2 hover:bg-brand-ink/5 rounded-full transition-colors text-brand-ink"
+                >
+                  <X className="w-8 h-8" />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-8 items-start">
+                {isAdmin && (
+                  <motion.button
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    onClick={() => {
+                      setIsAddModalOpen(true);
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 px-6 py-3 bg-brand-red text-white rounded-full shadow-lg shadow-brand-red/20 mb-4"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Add New Artwork</span>
+                  </motion.button>
+                )}
+
+                {['Gallery', 'Exhibitions', 'About', 'Contact'].map((item, i) => (
+                  <motion.button
+                    key={item}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    onClick={() => {
+                      setCurrentView(item.toLowerCase() as any);
+                      setIsMenuOpen(false);
+                    }}
+                    className="text-4xl md:text-6xl font-serif font-bold tracking-tighter text-brand-ink hover:text-brand-red transition-colors text-left"
+                  >
+                    {item.toUpperCase()}
+                  </motion.button>
+                ))}
+                
                 <motion.button
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 }}
                   onClick={() => {
-                    setIsAddModalOpen(true);
+                    handleShare();
                     setIsMenuOpen(false);
                   }}
-                  className="flex items-center gap-3 px-8 py-4 bg-brand-red text-white rounded-full shadow-2xl shadow-brand-red/40 mb-4"
+                  className="text-4xl md:text-6xl font-serif font-bold tracking-tighter text-brand-ink hover:text-brand-red transition-colors text-left"
                 >
-                  <Plus className="w-6 h-6" />
-                  <span className="text-sm uppercase tracking-[0.3em] font-bold">Add New Artwork</span>
+                  SHARE
                 </motion.button>
-              )}
 
-              {['Gallery', 'Exhibitions', 'About', 'Contact', 'Share'].map((item, i) => (
-              <motion.button
-                key={item}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                onClick={() => {
-                  if (item === 'Gallery') setCurrentView('gallery');
-                  else if (item === 'Exhibitions') setCurrentView('exhibitions');
-                  else if (item === 'About') setCurrentView('about');
-                  else if (item === 'Contact') return;
-                  else if (item === 'Share') handleShare();
-                  else setCurrentView('home');
-                  setIsMenuOpen(false);
-                }}
-                className={cn(
-                  "text-4xl font-light tracking-widest uppercase hover:italic transition-all text-brand-ink hover:text-brand-red",
-                  item === 'Contact' && "cursor-default opacity-30 hover:text-brand-ink hover:not-italic"
+                {user ? (
+                  <motion.button
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.6 }}
+                    onClick={() => {
+                      handleLogout();
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 text-brand-ink/40 hover:text-brand-red transition-colors mt-8"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span className="text-xs uppercase tracking-widest font-bold">Logout</span>
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.6 }}
+                    onClick={() => {
+                      handleLogin();
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 text-brand-ink/40 hover:text-brand-red transition-colors mt-8"
+                  >
+                    <LogIn className="w-5 h-5" />
+                    <span className="text-xs uppercase tracking-widest font-bold">Admin Login</span>
+                  </motion.button>
                 )}
-              >
-                {item}
-              </motion.button>
-            ))}
-          </motion.div>
+              </div>
+            </motion.div>
         )}
       </AnimatePresence>
 

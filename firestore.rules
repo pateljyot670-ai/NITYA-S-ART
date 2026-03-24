@@ -50,20 +50,12 @@ service cloud.firestore {
     // ===============================================================
 
     match /artworks/{artworkId} {
-      // Publicly readable
       allow read: if true;
-
-      // Only admin can create or update
-      allow create: if isAdmin() && isValidArtwork(request.resource.data);
-      allow update: if isAdmin() && isValidArtwork(request.resource.data);
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     match /sections/{sectionId} {
-      // Publicly readable
       allow read: if true;
-
-      // Only admin can update
       allow write: if isAdmin();
     }
 
