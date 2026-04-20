@@ -184,6 +184,7 @@ export default function App() {
   const [sections, setSections] = useState<Record<string, Section>>({});
   const [isEditSectionModalOpen, setIsEditSectionModalOpen] = useState(false);
   const [sectionToEdit, setSectionToEdit] = useState<Section | null>(null);
+  const [globalError, setGlobalError] = useState<string | null>(null);
 
   const handleDelete = async () => {
     if (!artworkToDelete || !isAdmin) return;
@@ -195,8 +196,12 @@ export default function App() {
       if (selectedArtwork?.id === artworkToDelete.id) {
         setIsDetailOpen(false);
       }
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `artworks/${artworkToDelete.id}`);
+    } catch (error: any) {
+      if (error.message.includes('Quota exceeded') || error.message.includes('Quota limit exceeded')) {
+        setGlobalError('The application has reached its daily free limit for database operations. This limit resets every 24 hours at midnight Pacific Time.');
+      } else {
+        handleFirestoreError(error, OperationType.DELETE, `artworks/${artworkToDelete.id}`);
+      }
     }
   };
 
@@ -221,10 +226,14 @@ export default function App() {
         id: doc.id
       })) as Artwork[];
       
-      // If no artworks in DB, fallback to constants for initial view
-      setArtworks(arts.length > 0 ? arts : ARTWORKS);
+      // Only show artworks from the database
+      setArtworks(arts);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'artworks');
+      if (error.message.includes('Quota exceeded') || error.message.includes('Quota limit exceeded')) {
+        setGlobalError('The application has reached its daily free limit for database operations. This limit resets every 24 hours at midnight Pacific Time.');
+      } else {
+        handleFirestoreError(error, OperationType.LIST, 'artworks');
+      }
     });
 
     return () => unsubscribe();
@@ -241,7 +250,11 @@ export default function App() {
       });
       setSections(sectionMap);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'sections');
+      if (error.message.includes('Quota exceeded') || error.message.includes('Quota limit exceeded')) {
+        setGlobalError('The application has reached its daily free limit for database operations. This limit resets every 24 hours at midnight Pacific Time.');
+      } else {
+        handleFirestoreError(error, OperationType.LIST, 'sections');
+      }
     });
 
     return () => unsubscribe();
@@ -336,8 +349,12 @@ export default function App() {
           year: new Date().getFullYear().toString(),
           description: ''
         });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.CREATE, 'artworks');
+      } catch (error: any) {
+        if (error.message.includes('Quota exceeded') || error.message.includes('Quota limit exceeded')) {
+          setGlobalError('The application has reached its daily free limit for database operations. This limit resets every 24 hours at midnight Pacific Time.');
+        } else {
+          handleFirestoreError(error, OperationType.CREATE, 'artworks');
+        }
       }
     }
   };
@@ -351,8 +368,12 @@ export default function App() {
       await updateDoc(doc(db, 'artworks', id), data);
       setIsEditModalOpen(false);
       setArtworkToEdit(null);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `artworks/${artworkToEdit.id}`);
+    } catch (error: any) {
+      if (error.message.includes('Quota exceeded') || error.message.includes('Quota limit exceeded')) {
+        setGlobalError('The application has reached its daily free limit for database operations. This limit resets every 24 hours at midnight Pacific Time.');
+      } else {
+        handleFirestoreError(error, OperationType.UPDATE, `artworks/${artworkToEdit.id}`);
+      }
     }
   };
 
@@ -368,8 +389,12 @@ export default function App() {
       });
       setIsEditSectionModalOpen(false);
       setSectionToEdit(null);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `sections/${sectionToEdit.id}`);
+    } catch (error: any) {
+      if (error.message.includes('Quota exceeded') || error.message.includes('Quota limit exceeded')) {
+        setGlobalError('The application has reached its daily free limit for database operations. This limit resets every 24 hours at midnight Pacific Time.');
+      } else {
+        handleFirestoreError(error, OperationType.WRITE, `sections/${sectionToEdit.id}`);
+      }
     }
   };
 
@@ -439,6 +464,26 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-brand-cream text-brand-ink font-sans selection:bg-brand-red selection:text-white">
+      <AnimatePresence>
+        {globalError && (
+          <motion.div 
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-0 left-0 right-0 z-[1000] bg-brand-red text-white p-4 text-center text-xs uppercase tracking-widest font-bold shadow-xl"
+          >
+            <div className="max-w-7xl mx-auto flex items-center justify-center gap-4">
+              <span>{globalError}</span>
+              <button 
+                onClick={() => setGlobalError(null)}
+                className="p-1 hover:bg-white/20 rounded-full transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Background Accents */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-brand-yellow/10 blur-[120px] rounded-full" />
